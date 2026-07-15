@@ -70,12 +70,14 @@ Targeting: QA Automation Engineer / SDET / Backend Java Developer
 
 def get_llm():
     """Initialize LLM lazily — only when needed."""
+    api_key = os.environ.get("GROQ_API_KEY")  
+    if not api_key:
+        raise ValueError("GROQ_API_KEY environment variable not set!")
     return ChatGroq(
-        api_key=os.getenv("GROQ_API_KEY"),
+        api_key=api_key,
         model_name="llama-3.3-70b-versatile",
         temperature=0
     )
-
 def search_jobs(keywords: list) -> list:
     """Search jobs by keywords."""
     results = []
