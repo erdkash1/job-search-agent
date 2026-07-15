@@ -1,6 +1,5 @@
 import streamlit as st
-from agent import run_job_search, generate_cover_letter, JOBS, BLOCKED
-
+from agent import generate_cover_letter, JOBS, BLOCKED
 st.set_page_config(
     page_title="Job Search AI Agent",
     page_icon="🤖",
