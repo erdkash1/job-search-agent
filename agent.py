@@ -71,6 +71,8 @@ Targeting: QA Automation Engineer / SDET / Backend Java Developer
 def get_llm():
     """Initialize LLM lazily — only when needed."""
     api_key = os.environ.get("GROQ_API_KEY")  
+    print(f"DEBUG: API key found: {api_key is not None}")  # ← add this
+
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable not set!")
     return ChatGroq(
