@@ -4,14 +4,6 @@ import os
 
 load_dotenv()
 
-# Initialize Groq LLM
-llm = ChatGroq(
-    api_key=os.getenv("GROQ_API_KEY"),
-    model_name="llama-3.3-70b-versatile",
-    temperature=0
-)
-
-# Simulated job database
 JOBS = [
     {
         "title": "QA Automation Engineer",
@@ -58,29 +50,36 @@ JOBS = [
 ]
 
 # Blocked companies
-BLOCKED = ["epam", "leidos", "saic", "booz allen", "caci", 
+BLOCKED = ["epam", "leidos", "saic", "booz allen", "caci",
            "peraton", "general dynamics", "amentum"]
 
 # Candidate profile
 CANDIDATE = """
 Name: Erdenesuren Shirmen
 Education: CS Graduate — Missouri State University (2026)
-Skills: Java, Spring Boot, Selenium WebDriver, Playwright, 
-        RestAssured, Cucumber/BDD, TestNG, JUnit 5, PostgreSQL, 
+Skills: Java, Spring Boot, Selenium WebDriver, Playwright,
+        RestAssured, Cucumber/BDD, TestNG, JUnit 5, PostgreSQL,
         Docker, AWS, Python, Kotlin
 Projects:
   - Food Rescue Optimizer (Java, Spring Boot, ML, AWS ECS)
   - Ecommerce API (Spring Boot, PostgreSQL, JWT, Redis, Docker)
-  - QA Portfolio (70 automated tests across Selenium + Playwright + RestAssured + Cucumber)
+  - QA Portfolio (76 automated tests across Selenium + Playwright + RestAssured + Cucumber)
 Status: OPT (STEM eligible — 3 years)
 Targeting: QA Automation Engineer / SDET / Backend Java Developer
 """
 
-def search_jobs(keywords: list[str]) -> list[dict]:
+def get_llm():
+    """Initialize LLM lazily — only when needed."""
+    return ChatGroq(
+        api_key=os.getenv("GROQ_API_KEY"),
+        model_name="llama-3.3-70b-versatile",
+        temperature=0
+    )
+
+def search_jobs(keywords: list) -> list:
     """Search jobs by keywords."""
     results = []
     for job in JOBS:
-        # Check if any keyword matches title or skills
         matches = any(
             keyword.lower() in job["title"].lower() or
             any(keyword.lower() in skill.lower() for skill in job["skills"])
@@ -90,7 +89,7 @@ def search_jobs(keywords: list[str]) -> list[dict]:
             results.append(job)
     return results
 
-def filter_blocked(jobs: list[dict]) -> tuple[list[dict], list[dict]]:
+def filter_blocked(jobs: list) -> tuple:
     """Filter out blocked companies."""
     allowed = []
     blocked = []
@@ -103,9 +102,10 @@ def filter_blocked(jobs: list[dict]) -> tuple[list[dict], list[dict]]:
 
 def generate_cover_letter(job: dict) -> str:
     """Generate tailored cover letter using Groq."""
+    llm = get_llm()
     response = llm.invoke(
         f"""Write a short professional cover letter for this job:
-        
+
 Job Title: {job['title']}
 Company: {job['company']}
 Location: {job['location']}
@@ -124,16 +124,18 @@ Instructions:
     )
     return response.content
 
-def rank_jobs(jobs: list[dict]) -> list[dict]:
+def rank_jobs(jobs: list) -> list:
     """Rank jobs by relevance using AI."""
     if not jobs:
         return []
-    
+
+    llm = get_llm()
+
     jobs_text = "\n".join([
         f"{i+1}. {j['title']} at {j['company']} — Skills: {', '.join(j['skills'])}"
         for i, j in enumerate(jobs)
     ])
-    
+
     response = llm.invoke(
         f"""Given this candidate profile:
 {CANDIDATE}
@@ -143,7 +145,7 @@ Rank these jobs from best to worst fit (return just the numbers in order, comma 
 
 Return only numbers like: 2,1,3"""
     )
-    
+
     try:
         order = [int(x.strip()) - 1 for x in response.content.strip().split(",")]
         return [jobs[i] for i in order if i < len(jobs)]
@@ -154,27 +156,23 @@ def run_job_search(query: str):
     """Main job search agent function."""
     print(f"\n🔍 Searching for: {query}")
     print("=" * 50)
-    
-    # Step 1 — Search
+
     keywords = query.split()
     found_jobs = search_jobs(keywords)
     print(f"✅ Found {len(found_jobs)} matching jobs")
-    
-    # Step 2 — Filter
+
     allowed_jobs, blocked_jobs = filter_blocked(found_jobs)
     if blocked_jobs:
         print(f"🚫 Filtered out {len(blocked_jobs)} blocked companies: "
               f"{', '.join(j['company'] for j in blocked_jobs)}")
-    
+
     if not allowed_jobs:
         print("❌ No jobs remaining after filtering!")
         return
-    
-    # Step 3 — Rank
+
     print(f"\n🤖 Ranking {len(allowed_jobs)} jobs by fit...")
     ranked_jobs = rank_jobs(allowed_jobs)
-    
-    # Step 4 — Display results
+
     print(f"\n📋 Top Jobs For You:")
     print("=" * 50)
     for i, job in enumerate(ranked_jobs, 1):
@@ -182,12 +180,10 @@ def run_job_search(query: str):
         print(f"   📍 {job['location']}")
         print(f"   🛠  {', '.join(job['skills'])}")
         print(f"   🔗 {job['url']}")
-    
-    # Step 5 — Generate cover letter for top job
+
     if ranked_jobs:
         top_job = ranked_jobs[0]
         print(f"\n✉️  Generating cover letter for top match...")
-        print(f"   {top_job['title']} at {top_job['company']}")
         print("=" * 50)
         cover_letter = generate_cover_letter(top_job)
         print(cover_letter)
