@@ -1,5 +1,8 @@
 import streamlit as st
 from agent import generate_cover_letter, JOBS, BLOCKED
+import os
+st.write("ENV CHECK:", "GROQ_API_KEY" in os.environ)
+st.write("KEY VALUE:", os.environ.get("GROQ_API_KEY", "NOT FOUND")[:10] if os.environ.get("GROQ_API_KEY") else "NOT FOUND")
 st.set_page_config(
     page_title="Job Search AI Agent",
     page_icon="🤖",
