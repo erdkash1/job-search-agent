@@ -9,10 +9,6 @@ st.set_page_config(  # ← must be FIRST streamlit command
 
 from agent import generate_cover_letter, JOBS, BLOCKED
 
-
-st.write("ENV CHECK:", "GROQ_API_KEY" in os.environ)
-st.write("KEY:", os.environ.get("GROQ_API_KEY", "NOT FOUND")[:8] if os.environ.get("GROQ_API_KEY") else "NOT FOUND")
-
 st.title("🤖 Job Search AI Agent")
 st.markdown("*Powered by LangChain + Groq (Llama 3)*")
 st.divider()
